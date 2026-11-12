@@ -1,0 +1,15 @@
+# Compilación y dependencias locales
+build/
+.gradle/
+.idea/
+*.iml
+local.properties
+
+# Generado al compilar: copia de la pantalla de captura desde ../captura-visitas-pwa
+app/src/main/assets/
+
+# Firmas: nunca al repositorio
+*.jks
+*.keystore
+keystore.properties
+dist/

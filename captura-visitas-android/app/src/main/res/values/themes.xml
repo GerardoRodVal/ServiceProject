@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Captura" parent="android:Theme.Material.Light.DarkActionBar">
+        <item name="android:colorPrimary">#0B7A66</item>
+        <item name="android:colorPrimaryDark">#085F50</item>
+        <item name="android:statusBarColor">#0B7A66</item>
+        <item name="android:windowBackground">#F4F6F3</item>
+    </style>
+</resources>

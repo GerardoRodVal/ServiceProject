@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-labelledby="t">
+  <title id="t">NearLeads</title>
+  <!-- Versión simplificada para 16 a 32 px: la red del isotipo no se distingue tan chica, así que queda la silueta
+       del embudo y el prospecto que sale. -->
+  <defs>
+    <linearGradient id="nl-gf" x1="0" y1="4" x2="0" y2="30" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#04438F"/>
+      <stop offset=".6" stop-color="#0A8CA3"/>
+      <stop offset="1" stop-color="#00D0B0"/>
+    </linearGradient>
+  </defs>
+  <path d="M3.5 6.5h25l-9 10.5v7h-7v-7z" fill="none" stroke="url(#nl-gf)" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M12.5 17h7" stroke="url(#nl-gf)" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="16" cy="28.6" r="2.6" fill="#00F0B8"/>
+</svg>

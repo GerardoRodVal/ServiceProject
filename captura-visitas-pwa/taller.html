@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Taller</title>
+<meta name="description" content="Registra el vehículo, sus servicios y fotos, y genera el QR de seguimiento.">
+<meta name="theme-color" content="#04438F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Taller">
+<link rel="manifest" href="taller.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* App del mecánico: vive en la red del taller. Cada cambio se guarda al momento. */
+:root {
+  --bg: #F4F6F3; --surface: #FFFFFF; --ink: #17202A; --muted: #5C6773; --line: #DCE2DD;
+  --accent: #04438F; --accent-ink: #FFFFFF; --soft: #E3EAF8;
+  --hi: #04438F; --mid: #A35F00; --lo: #B42318;
+  --hi-bg: #E3EAF8; --mid-bg: #FBF0DC; --lo-bg: #FBE4E1;
+  --font: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0A0E13; --surface: #151D27; --ink: #E8EEF4; --muted: #8792A2; --line: rgba(255,255,255,.09);
+    --accent: #8FA3E0; --accent-ink: #0B1530; --soft: #1A2440;
+    --hi: #8FA3E0; --mid: #F2B54A; --lo: #F08A80;
+    --hi-bg: rgba(143,163,224,.14); --mid-bg: rgba(242,181,74,.14); --lo-bg: rgba(240,138,128,.14);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0A0E13; --surface: #151D27; --ink: #E8EEF4; --muted: #8792A2; --line: rgba(255,255,255,.09);
+  --accent: #8FA3E0; --accent-ink: #0B1530; --soft: #1A2440;
+  --hi: #8FA3E0; --mid: #F2B54A; --lo: #F08A80;
+  --hi-bg: rgba(143,163,224,.14); --mid-bg: rgba(242,181,74,.14); --lo-bg: rgba(240,138,128,.14);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font); font-size: 15px; line-height: 1.5;
+  padding: max(14px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px))
+           max(28px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+h1, h2, p, ul { margin: 0; }
+h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.01em; }
+h2 { font-size: 16px; font-weight: 700; }
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+[hidden] { display: none !important; }
+ul { list-style: none; padding: 0; }
+main, .top { max-width: 560px; margin: 0 auto; }
+
+.top { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.top .mec { width: 150px; }
+.mec input { font-size: 14px; padding: 9px 11px; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px; margin-bottom: 14px; }
+.card > h2 { margin-bottom: 12px; }
+.grupo { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grupo .ancho { grid-column: 1 / -1; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field > span { font-size: 12px; font-weight: 700; color: var(--muted); }
+.field input, .field select, .field textarea {
+  width: 100%; font: inherit; font-size: 16px; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px; min-height: 44px;
+}
+.field textarea { min-height: 84px; resize: vertical; }
+.field input:focus, .field select:focus, .field textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.req { color: var(--lo); }
+
+.btn {
+  font: inherit; font-weight: 700; font-size: 15px; min-height: 46px; padding: 0 18px; border-radius: 14px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer;
+  transition: transform .15s ease, opacity .15s ease;
+}
+.btn:active { transform: scale(.98); }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.full { width: 100%; }
+.btn.small { min-height: 36px; padding: 0 12px; font-size: 13px; border-radius: 11px; }
+.btn.ghost { background: transparent; }
+.link { font: inherit; font-size: 13px; font-weight: 700; color: var(--accent); background: none; border: 0; padding: 4px 0; cursor: pointer; }
+.link.bad { color: var(--lo); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-op {
+  font: inherit; font-size: 13px; font-weight: 600; padding: 8px 12px; border-radius: 999px; min-height: 36px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer;
+}
+.chip-op.on { background: var(--soft); border-color: var(--accent); color: var(--accent); }
+.tag {
+  display: inline-block; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px;
+  background: var(--soft); color: var(--accent); white-space: nowrap;
+}
+.tag.warn { background: var(--mid-bg); color: var(--mid); }
+.tag.ok { background: var(--hi-bg); color: var(--hi); }
+
+.progreso { margin: 14px 0 6px; height: 12px; border-radius: 999px; background: var(--bg); overflow: hidden; border: 1px solid var(--line); }
+.progreso i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 999px; transition: width .5s ease; }
+.vehiculo-cab { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.placa { font-size: 22px; font-weight: 800; letter-spacing: .04em; }
+
+/* Servicios */
+.tarea { border-top: 1px solid var(--line); padding: 14px 0; }
+.tarea:first-child { border-top: 0; padding-top: 0; }
+.tarea-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.tarea-top b { font-size: 15px; }
+.tarea-top small { color: var(--muted); font-size: 12px; text-align: right; }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; background: var(--bg); padding: 4px; border-radius: 14px; border: 1px solid var(--line); }
+.seg button {
+  font: inherit; font-size: 13px; font-weight: 700; min-height: 40px; border: 0; border-radius: 10px;
+  background: transparent; color: var(--muted); cursor: pointer;
+}
+.seg button.on[data-estado="pendiente"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.seg button.on[data-estado="en_proceso"] { background: var(--mid-bg); color: var(--mid); }
+.seg button.on[data-estado="hecho"] { background: var(--accent); color: var(--accent-ink); }
+.tarea-pie { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+.tarea-pie .nota { font-size: 13px; color: var(--muted); flex-basis: 100%; }
+.nota-edit { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 8px; }
+.nota-edit input { font: inherit; font-size: 16px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); min-height: 44px; }
+.agregar { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 14px; }
+.agregar input { font: inherit; font-size: 16px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); min-height: 44px; }
+.catalogo { margin-top: 12px; }
+.catalogo .chips { margin-top: 8px; }
+
+/* Fotos */
+.fotos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.foto { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: var(--bg); border: 1px solid var(--line); }
+.foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.foto span { position: absolute; left: 6px; bottom: 6px; font-size: 11px; font-weight: 700; color: #fff; background: rgba(0,0,0,.55); padding: 2px 7px; border-radius: 999px; }
+.subir { display: grid; gap: 10px; margin-top: 12px; }
+
+/* QR */
+.qr-caja { display: grid; grid-template-columns: 150px 1fr; gap: 16px; align-items: center; }
+.qr { background: #fff; border-radius: 14px; padding: 10px; width: 150px; height: 150px; }
+.qr svg { width: 100%; height: 100%; display: block; }
+.acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+.resumen-lista li { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.resumen-lista li:first-child { border-top: 0; padding-top: 0; }
+.resumen-lista small { color: var(--muted); }
+.estado-vacio { color: var(--muted); font-size: 14px; }
+
+.vivo { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--muted); }
+.vivo::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulso 1.8s ease-in-out infinite; }
+@keyframes pulso { 50% { opacity: .3; } }
+
+.toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 140%); max-width: 92vw;
+  background: var(--ink); color: var(--bg); padding: 12px 18px; border-radius: 14px; font-size: 14px; font-weight: 600;
+  box-shadow: 0 12px 30px -10px rgba(0,0,0,.4); transition: transform .3s ease; z-index: 10;
+}
+.toast.show { transform: translate(-50%, 0); }
+.toast.bad { background: var(--lo); color: #fff; }
+@media (max-width: 380px) { .qr-caja { grid-template-columns: 1fr; justify-items: center; } .grupo { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <p class="eyebrow">Taller</p>
+    <h1 id="titulo">Vehículos</h1>
+  </div>
+  <label class="field mec"><span>Mecánico</span><input id="mecanico" placeholder="Tu nombre" maxlength="60" autocomplete="off"></label>
+</header>
+
+<main>
+  <!-- INICIO -->
+  <section id="vInicio">
+    <button class="btn primary full" id="nuevo" type="button">+ Registrar vehículo</button>
+
+    <div class="card" style="margin-top:14px">
+      <h2>Abrir un vehículo</h2>
+      <p class="muted small" style="margin:4px 0 12px">Pega el código de taller del vehículo para retomarlo.</p>
+      <div class="agregar" style="margin-top:0">
+        <input id="codigo" placeholder="Código de taller" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <button class="btn" id="abrirCodigo" type="button">Abrir</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Recientes en este celular</h2>
+      <ul class="resumen-lista" id="recientes" style="margin-top:12px"></ul>
+      <p class="estado-vacio" id="sinRecientes">Aún no registras vehículos desde este celular.</p>
+    </div>
+  </section>
+
+  <!-- NUEVO VEHÍCULO -->
+  <section id="vNuevo" hidden>
+    <form id="form" novalidate>
+      <div class="card">
+        <h2>Vehículo</h2>
+        <div class="grupo" style="margin-top:12px">
+          <div class="field ancho"><span>Tipo</span>
+            <div class="chips" id="tipo" role="group" aria-label="Tipo de vehículo">
+              <button class="chip-op on" type="button" data-tipo="auto">Auto</button>
+              <button class="chip-op" type="button" data-tipo="moto">Moto</button>
+            </div>
+          </div>
+          <label class="field"><span>Marca <b class="req">*</b></span><input name="marca" maxlength="40" required placeholder="Nissan"></label>
+          <label class="field"><span>Modelo <b class="req">*</b></span><input name="modelo" maxlength="40" required placeholder="Versa"></label>
+          <label class="field"><span>Año</span><input name="anio" inputmode="numeric" maxlength="4" placeholder="2019"></label>
+          <label class="field"><span>Color</span><input name="color" maxlength="30" placeholder="Gris"></label>
+          <label class="field"><span>Placa</span><input name="placa" maxlength="12" autocapitalize="characters" placeholder="ABC-123-A"></label>
+          <label class="field"><span>Kilometraje</span><input name="kilometraje" inputmode="numeric" maxlength="7" placeholder="85000"></label>
+          <label class="field ancho"><span>Número de serie (VIN, opcional)</span><input name="vin" maxlength="17" autocapitalize="characters"></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Cliente</h2>
+        <div class="grupo" style="margin-top:12px">
+          <label class="field"><span>Nombre <b class="req">*</b></span><input name="nombre" maxlength="80" required placeholder="Laura Méndez"></label>
+          <label class="field"><span>Teléfono</span><input name="telefono" inputmode="tel" maxlength="30" placeholder="55 0000 0000"></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Recepción</h2>
+        <div class="grupo" style="margin-top:12px">
+          <label class="field"><span>Combustible</span>
+            <select name="combustible">
+              <option value="">Sin registrar</option>
+              <option>Reserva</option><option>1/4</option><option>1/2</option><option>3/4</option><option>Lleno</option>
+            </select>
+          </label>
+          <label class="field"><span>Entrega prometida</span><input name="promesa" type="date"></label>
+          <label class="field ancho"><span>Estado al recibir (golpes, luces, objetos, observaciones)</span>
+            <textarea name="notas" maxlength="600" placeholder="Rayón en puerta derecha, sin radio…"></textarea>
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Servicios a realizar <b class="req">*</b></h2>
+        <div class="catalogo">
+          <p class="muted small">Toca para agregar:</p>
+          <div class="chips" id="catalogoNuevo"></div>
+        </div>
+        <div class="agregar">
+          <input id="servicioNuevo" maxlength="80" placeholder="Otro servicio">
+          <button class="btn" id="agregarServicio" type="button">Agregar</button>
+        </div>
+        <ul class="resumen-lista" id="listaNueva" style="margin-top:12px"></ul>
+      </div>
+
+      <div class="card">
+        <h2>Fotos de recepción</h2>
+        <p class="muted small" style="margin:4px 0 0">Fotos de cómo llega el auto. Se comprimen antes de enviarse.</p>
+        <label class="btn full" style="display:flex;align-items:center;justify-content:center;margin-top:12px;cursor:pointer">
+          Tomar o elegir fotos
+          <input id="fotosNuevas" type="file" accept="image/*" multiple capture="environment" hidden>
+        </label>
+        <div class="fotos" id="previaNuevas"></div>
+      </div>
+
+      <button class="btn primary full" id="guardar" type="submit">Guardar y generar QR</button>
+      <button class="btn ghost full" id="cancelarNuevo" type="button" style="margin-top:8px">Cancelar</button>
+    </form>
+  </section>
+
+  <!-- VEHÍCULO EN SERVICIO -->
+  <section id="vVehiculo" hidden>
+    <div class="card">
+      <div class="vehiculo-cab">
+        <div>
+          <p class="eyebrow" id="vhCliente">Cliente</p>
+          <p class="placa" id="vhPlaca">—</p>
+          <p class="muted small" id="vhDesc"></p>
+        </div>
+        <div style="text-align:right">
+          <span class="tag" id="vhEstado">—</span>
+          <p class="vivo" style="margin-top:8px">En vivo</p>
+        </div>
+      </div>
+      <div class="progreso" aria-hidden="true"><i id="vhBarra"></i></div>
+      <p class="small muted" id="vhProgreso"></p>
+      <p class="small" id="vhPromesa" hidden></p>
+    </div>
+
+    <div class="card">
+      <h2>Servicios</h2>
+      <ul id="listaTareas" style="margin-top:10px"></ul>
+      <div class="agregar">
+        <input id="servicioExtra" maxlength="80" placeholder="Agregar otro servicio">
+        <button class="btn" id="agregarExtra" type="button">Agregar</button>
+      </div>
+      <div class="catalogo">
+        <div class="chips" id="catalogoVeh"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Fotos</h2>
+      <div class="subir">
+        <select id="etapaFoto" aria-label="Etapa de la foto">
+          <option value="avance">Avance del servicio</option>
+          <option value="recepcion">Recepción</option>
+          <option value="entrega">Entrega</option>
+        </select>
+        <label class="btn primary full" style="display:flex;align-items:center;justify-content:center;cursor:pointer">
+          Agregar foto
+          <input id="fotoArchivo" type="file" accept="image/*" capture="environment" hidden>
+        </label>
+      </div>
+      <div class="fotos" id="fotos"></div>
+    </div>
+
+    <div class="card">
+      <h2>Código para el auto</h2>
+      <p class="muted small" style="margin:4px 0 12px">Pega este QR en el parabrisas o el tablero. El cliente lo escanea para ver el avance, sin poder cambiar nada.</p>
+      <div class="qr-caja">
+        <div class="qr" id="qrVeh" aria-label="Código QR de seguimiento"></div>
+        <div>
+          <p class="small" id="vhEnlace" style="word-break:break-all;color:var(--muted)"></p>
+          <div class="acciones">
+            <button class="btn small" id="compartir" type="button">Compartir enlace</button>
+            <button class="btn small ghost" id="copiar" type="button">Copiar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Datos de recepción</h2>
+      <ul class="resumen-lista" style="margin-top:10px" id="datosVeh"></ul>
+    </div>
+
+    <button class="btn ghost full" id="volverInicio" type="button">← Volver al inicio</button>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="vendor/qrcode.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ESTADO = { recibido: 'Recibido', en_proceso: 'En proceso', listo: 'Listo para entregar', entregado: 'Entregado' };
+const ETAPA = { recepcion: 'Recepción', avance: 'Avance', entrega: 'Entrega' };
+const TAREA = { pendiente: 'Pendiente', en_proceso: 'En proceso', hecho: 'Hecho' };
+const token = new URLSearchParams(location.search).get('v');
+const CLAVE_MEC = 'taller_mecanico';
+const CLAVE_REC = 'taller_recientes';
+
+let catalogo = [];
+let veh = null;             // última vista del vehículo que llegó del servidor
+let tipo = 'auto';
+let servicios = [];         // servicios elegidos en el alta
+let fotosNuevas = [];       // archivos elegidos en el alta
+let notaAbierta = null;     // id de servicio con el editor de nota abierto
+let ocupado = false;
+
+const mecanico = () => $('#mecanico').value.trim();
+
+function toast(msg, tipoMsg = 'ok') {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = `toast ${tipoMsg === 'bad' ? 'bad' : ''}`;
+  requestAnimationFrame(() => t.classList.add('show'));
+  clearTimeout(toast.h);
+  toast.h = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// Solo las peticiones de escritura llevan el encabezado que exige el gestor.
+async function api(ruta, cuerpo) {
+  const opciones = cuerpo === undefined ? {} : {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Captura': '1' },
+    body: JSON.stringify({ ...cuerpo, quien: mecanico() }),
+  };
+  try {
+    const r = await fetch(ruta, { ...opciones, cache: 'no-store' });
+    const datos = await r.json().catch(() => ({}));
+    return { ok: r.ok, datos };
+  } catch {
+    return { ok: false, datos: { error: 'Sin conexión con el taller. Revisa el Wi-Fi.' } };
+  }
+}
+
+function leerRecientes() {
+  try { return JSON.parse(localStorage.getItem(CLAVE_REC)) || []; } catch { return []; }
+}
+function recordar(v) {
+  try {
+    const lista = leerRecientes().filter(x => x.token !== v.token_taller);
+    lista.unshift({ token: v.token_taller, placa: v.vehiculo.placa, marca: v.vehiculo.marca, modelo: v.vehiculo.modelo, cliente: v.cliente.nombre });
+    localStorage.setItem(CLAVE_REC, JSON.stringify(lista.slice(0, 12)));
+  } catch { /* sin almacenamiento: la app sigue funcionando */ }
+}
+
+function pintarRecientes() {
+  const lista = leerRecientes();
+  $('#sinRecientes').hidden = lista.length > 0;
+  $('#recientes').innerHTML = lista.map(x => `
+    <li><a href="?v=${encodeURIComponent(x.token)}" style="color:inherit;text-decoration:none;display:block;width:100%">
+      <b>${esc(x.placa || 'Sin placa')}</b> · ${esc(x.marca)} ${esc(x.modelo)}<br><small>${esc(x.cliente)}</small></a></li>`).join('');
+}
+
+// --- Navegación entre pantallas ---
+
+function mostrar(vista) {
+  $('#vInicio').hidden = vista !== 'inicio';
+  $('#vNuevo').hidden = vista !== 'nuevo';
+  $('#vVehiculo').hidden = vista !== 'vehiculo';
+  $('#titulo').textContent = { inicio: 'Vehículos', nuevo: 'Nuevo vehículo', vehiculo: 'En servicio' }[vista];
+  window.scrollTo(0, 0);
+}
+
+// Volver al inicio recarga la página sin parámetros: así no queda ningún vehículo abierto en segundo plano.
+function irInicio() {
+  location.href = location.pathname;
+}
+
+// --- Alta del vehículo ---
+
+function pintarCatalogoNuevo() {
+  $('#catalogoNuevo').innerHTML = catalogo.map((s, i) => {
+    const on = servicios.includes(s);
+    return `<button class="chip-op ${on ? 'on' : ''}" type="button" data-cat="${i}">${on ? '✓ ' : '+ '}${esc(s)}</button>`;
+  }).join('');
+}
+
+function pintarServiciosNuevos() {
+  $('#listaNueva').innerHTML = servicios.length
+    ? servicios.map((s, i) => `<li><span>${esc(s)}</span><button class="link bad" type="button" data-quitar="${i}">Quitar</button></li>`).join('')
+    : '<li class="estado-vacio">Aún no hay servicios. Elige del catálogo o escribe uno.</li>';
+  pintarCatalogoNuevo();
+}
+
+function agregarServicioNuevo(nombre) {
+  const limpio = String(nombre || '').replace(/\s+/g, ' ').trim();
+  if (!limpio) return;
+  if (servicios.some(s => s.toLowerCase() === limpio.toLowerCase())) return toast('Ese servicio ya está en la lista.', 'bad');
+  if (servicios.length >= 40) return toast('Un vehículo admite hasta 40 servicios.', 'bad');
+  servicios.push(limpio);
+  pintarServiciosNuevos();
+}
+
+function abrirNuevo() {
+  $('#form').reset();
+  tipo = 'auto';
+  servicios = [];
+  fotosNuevas = [];
+  $('#previaNuevas').innerHTML = '';
+  $('#tipo').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.tipo === tipo));
+  pintarServiciosNuevos();
+  mostrar('nuevo');
+}
+
+function datosFormulario() {
+  const f = $('#form');
+  const v = n => f.elements[n].value.trim();
+  return {
+    tareas: servicios,
+    vehiculo: { tipo, marca: v('marca'), modelo: v('modelo'), anio: v('anio'), color: v('color'),
+                placa: v('placa'), vin: v('vin'), kilometraje: v('kilometraje') },
+    cliente: { nombre: v('nombre'), telefono: v('telefono') },
+    recepcion: { combustible: v('combustible'), notas: v('notas'), promesa: v('promesa') },
+  };
+}
+
+// Reduce la foto antes de subirla: el taller tiene datos móviles y el gestor guarda poco.
+async function comprimir(archivo) {
+  const url = URL.createObjectURL(archivo);
+  try {
+    const img = await new Promise((resolver, rechazar) => {
+      const i = new Image();
+      i.onload = () => resolver(i);
+      i.onerror = rechazar;
+      i.src = url;
+    });
+    const k = Math.min(1, 1280 / Math.max(img.width, img.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.width * k);
+    c.height = Math.round(img.height * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.72);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+$('#form').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (ocupado) return;
+  const f = $('#form');
+  if (!f.marca.value.trim() || !f.modelo.value.trim()) return toast('Escribe la marca y el modelo.', 'bad');
+  if (!f.nombre.value.trim()) return toast('Escribe el nombre del cliente.', 'bad');
+  if (!servicios.length) return toast('Agrega al menos un servicio.', 'bad');
+  ocupado = true;
+  $('#guardar').disabled = true;
+  $('#guardar').textContent = 'Guardando…';
+  const r = await api('/api/taller/vehiculos', datosFormulario());
+  if (!r.ok) {
+    ocupado = false;
+    $('#guardar').disabled = false;
+    $('#guardar').textContent = 'Guardar y generar QR';
+    return toast(r.datos.error || 'No se pudo guardar.', 'bad');
+  }
+  let fallidas = 0;
+  for (let i = 0; i < fotosNuevas.length; i++) {
+    $('#guardar').textContent = `Subiendo foto ${i + 1} de ${fotosNuevas.length}…`;
+    try {
+      const imagen = await comprimir(fotosNuevas[i]);
+      const subida = await api(`/api/taller/operacion/${r.datos.token_taller}/foto`, { etapa: 'recepcion', imagen });
+      if (!subida.ok) fallidas++;
+    } catch { fallidas++; }
+  }
+  if (fallidas) toast(`Vehículo guardado. ${fallidas} foto(s) no se subieron; puedes agregarlas desde el vehículo.`, 'bad');
+  ocupado = false;
+  location.href = `?v=${encodeURIComponent(r.datos.token_taller)}`;
+});
+
+$('#tipo').addEventListener('click', e => {
+  const b = e.target.closest('[data-tipo]');
+  if (!b) return;
+  tipo = b.dataset.tipo;
+  $('#tipo').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+});
+
+$('#catalogoNuevo').addEventListener('click', e => {
+  const b = e.target.closest('[data-cat]');
+  if (!b) return;
+  const nombre = catalogo[Number(b.dataset.cat)];
+  if (servicios.includes(nombre)) servicios = servicios.filter(s => s !== nombre);
+  else agregarServicioNuevo(nombre);
+  pintarServiciosNuevos();
+});
+
+$('#listaNueva').addEventListener('click', e => {
+  const b = e.target.closest('[data-quitar]');
+  if (!b) return;
+  servicios.splice(Number(b.dataset.quitar), 1);
+  pintarServiciosNuevos();
+});
+
+$('#agregarServicio').addEventListener('click', () => {
+  agregarServicioNuevo($('#servicioNuevo').value);
+  $('#servicioNuevo').value = '';
+});
+$('#servicioNuevo').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); $('#agregarServicio').click(); }
+});
+
+$('#fotosNuevas').addEventListener('change', e => {
+  fotosNuevas = fotosNuevas.concat(Array.from(e.target.files)).slice(0, 30);
+  e.target.value = '';
+  $('#previaNuevas').innerHTML = fotosNuevas.map((f, i) => `
+    <div class="foto"><img alt="Foto ${i + 1}" src="${esc(URL.createObjectURL(f))}"><span>${i + 1}</span></div>`).join('');
+});
+
+$('#nuevo').addEventListener('click', () => { location.href = '?nuevo'; });
+$('#cancelarNuevo').addEventListener('click', irInicio);
+$('#volverInicio').addEventListener('click', irInicio);
+$('#abrirCodigo').addEventListener('click', () => {
+  const c = $('#codigo').value.trim();
+  if (c) location.href = `?v=${encodeURIComponent(c)}`;
+});
+$('#codigo').addEventListener('keydown', e => { if (e.key === 'Enter') $('#abrirCodigo').click(); });
+
+// --- Vehículo en servicio ---
+
+function enlaceSeguimiento() {
+  return new URL(`seguimiento.html?v=${encodeURIComponent(veh.token_qr)}`, location.href).href;
+}
+
+function pintarQR() {
+  const el = $('#qrVeh');
+  el.innerHTML = '';
+  if (typeof qrcode === 'undefined') { el.textContent = 'QR no disponible'; return; }
+  const qr = qrcode(0, 'M');
+  qr.addData(enlaceSeguimiento());
+  qr.make();
+  el.innerHTML = qr.createSvgTag(4, 2, 'Código QR de seguimiento del vehículo');
+  $('#vhEnlace').textContent = enlaceSeguimiento();
+}
+
+function pintarVehiculo() {
+  const v = veh;
+  const m = v.vehiculo;
+  const p = v.progreso;
+  $('#vhCliente').textContent = v.cliente.nombre;
+  $('#vhPlaca').textContent = m.placa || 'Sin placa';
+  $('#vhDesc').textContent = [m.marca, m.modelo, m.anio, m.color].filter(Boolean).join(' · ');
+  $('#vhEstado').textContent = ESTADO[v.estado] || v.estado;
+  $('#vhEstado').className = `tag ${v.estado === 'listo' ? 'ok' : v.estado === 'entregado' ? '' : v.estado === 'en_proceso' ? 'warn' : ''}`;
+  $('#vhBarra').style.width = `${p.porcentaje}%`;
+  $('#vhProgreso').textContent = p.total ? `${p.hechas} de ${p.total} servicios terminados (${p.porcentaje}%)` : 'Sin servicios';
+  $('#vhPromesa').hidden = !v.promesa;
+  $('#vhPromesa').textContent = v.promesa ? `Entrega prometida: ${new Date(v.promesa + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })}` : '';
+  $('#datosVeh').innerHTML = [
+    ['Teléfono', v.cliente.telefono || '—'],
+    ['Combustible', v.recepcion.combustible || '—'],
+    ['Kilometraje', m.kilometraje != null ? `${m.kilometraje.toLocaleString('es-MX')} km` : '—'],
+    ['VIN', m.vin || '—'],
+    ['Notas de recepción', v.recepcion.notas || '—'],
+  ].map(([k, val]) => `<li><span class="muted">${esc(k)}</span><b style="text-align:right">${esc(val)}</b></li>`).join('');
+  pintarServicios();
+  pintarFotos();
+  pintarCatalogoVeh();
+}
+
+function pintarServicios() {
+  const bloqueado = veh.estado === 'entregado';
+  $('#listaTareas').innerHTML = veh.tareas.length ? veh.tareas.map(t => `
+    <li class="tarea" data-id="${esc(t.id)}">
+      <div class="tarea-top"><b>${esc(t.nombre)}</b><small>${t.por ? esc(t.por) : ''}${t.actualizado ? ' · ' + hora(t.actualizado) : ''}</small></div>
+      <div class="seg" role="group" aria-label="Estado de ${esc(t.nombre)}">
+        ${['pendiente', 'en_proceso', 'hecho'].map(e => `<button type="button" data-estado="${e}" class="${t.estado === e ? 'on' : ''}" ${bloqueado ? 'disabled' : ''}>${TAREA[e]}</button>`).join('')}
+      </div>
+      <div class="tarea-pie">
+        ${t.nota ? `<p class="nota">📝 ${esc(t.nota)}</p>` : ''}
+        ${bloqueado ? '' : `<button class="link" type="button" data-accion="nota">${t.nota ? 'Editar nota' : 'Agregar nota'}</button>`}
+        ${!bloqueado && t.estado === 'pendiente' ? '<button class="link bad" type="button" data-accion="quitar">Quitar</button>' : ''}
+      </div>
+      <div class="nota-edit" ${notaAbierta === t.id ? '' : 'hidden'}>
+        <input maxlength="300" value="${esc(t.nota)}" aria-label="Nota del servicio">
+        <button class="btn small primary" type="button" data-accion="guardar-nota">Guardar</button>
+      </div>
+    </li>`).join('') : '<li class="estado-vacio">Este vehículo no tiene servicios.</li>';
+}
+
+function hora(iso) {
+  return new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+}
+
+function pintarFotos() {
+  $('#fotos').innerHTML = veh.fotos.length ? veh.fotos.map((f, i) => `
+    <a class="foto" href="/api/taller/operacion/${encodeURIComponent(token)}/foto/${encodeURIComponent(f.id)}" target="_blank" rel="noopener">
+      <img loading="lazy" alt="Foto ${i + 1} · ${esc(ETAPA[f.etapa] || f.etapa)}" src="/api/taller/operacion/${encodeURIComponent(token)}/foto/${encodeURIComponent(f.id)}">
+      <span>${esc(ETAPA[f.etapa] || f.etapa)}</span>
+    </a>`).join('') : '<p class="estado-vacio" style="grid-column:1/-1">Aún no hay fotos.</p>';
+}
+
+function pintarCatalogoVeh() {
+  const usados = new Set(veh.tareas.map(t => t.nombre.toLowerCase()));
+  const libres = catalogo.filter(s => !usados.has(s.toLowerCase()));
+  $('#catalogoVeh').innerHTML = libres.length && veh.estado !== 'entregado'
+    ? libres.map((s, i) => `<button class="chip-op" type="button" data-sumar="${esc(s)}">+ ${esc(s)}</button>`).join('')
+    : '';
+}
+
+// Si el mecánico está escribiendo una nota, no se redibuja la lista para no perder lo que escribe.
+function escribiendo() {
+  const el = document.activeElement;
+  return !!el && el.tagName === 'INPUT' && el.closest('#listaTareas');
+}
+
+async function cargarVehiculo() {
+  let r;
+  try {
+    const x = await fetch(`/api/taller/operacion/${encodeURIComponent(token)}`, { cache: 'no-store' });
+    r = { ok: x.ok, datos: await x.json().catch(() => ({})) };
+  } catch {
+    r = { ok: false, datos: { error: 'Sin conexión con el taller. Revisa el Wi-Fi.' } };
+  }
+  if (!r.ok) {
+    // Un fallo de red durante el refresco no saca al mecánico de la pantalla; un código inválido sí.
+    if (!veh && r.datos.error) { toast(r.datos.error, 'bad'); irInicio(); }
+    return;
+  }
+  veh = r.datos;
+  recordar(veh);
+  if (!escribiendo()) { pintarQR(); pintarVehiculo(); }
+}
+
+async function abrirVehiculo() {
+  mostrar('vehiculo');
+  $('#vhPlaca').textContent = 'Cargando…';
+  await cargarVehiculo();
+}
+
+// Cambios en un servicio. Cada uno se guarda al momento y el servidor responde con el vehículo completo.
+async function cambiarTarea(id, cambios) {
+  const r = await api(`/api/taller/operacion/${encodeURIComponent(token)}/tarea`, { tarea: id, ...cambios });
+  if (!r.ok) return toast(r.datos.error || 'No se pudo guardar el cambio.', 'bad');
+  veh = r.datos;
+  recordar(veh);
+  pintarVehiculo();
+}
+
+$('#listaTareas').addEventListener('click', e => {
+  const seg = e.target.closest('[data-estado]');
+  const accion = e.target.closest('[data-accion]');
+  const fila = e.target.closest('.tarea');
+  if (!fila) return;
+  const id = fila.dataset.id;
+  const tarea = veh.tareas.find(t => t.id === id);
+  if (seg) return cambiarTarea(id, { estado: seg.dataset.estado });
+  if (!accion || !tarea) return;
+  if (accion.dataset.accion === 'nota') {
+    notaAbierta = notaAbierta === id ? null : id;
+    pintarServicios();
+    document.querySelector(`.tarea[data-id="${id}"] .nota-edit input`)?.focus();
+  } else if (accion.dataset.accion === 'guardar-nota') {
+    notaAbierta = null;
+    cambiarTarea(id, { nota: fila.querySelector('.nota-edit input').value });
+  } else if (accion.dataset.accion === 'quitar') {
+    if (confirm(`¿Quitar «${tarea.nombre}» de la lista?`)) cambiarTarea(id, { eliminar: true });
+  }
+});
+
+async function agregarServicio(nombre) {
+  const limpio = String(nombre || '').trim();
+  if (!limpio) return;
+  if (veh.tareas.some(t => t.nombre.toLowerCase() === limpio.toLowerCase())) return toast('Ese servicio ya está en la lista.', 'bad');
+  const r = await api(`/api/taller/operacion/${encodeURIComponent(token)}/tarea`, { tarea: null, nombre: limpio });
+  if (!r.ok) return toast(r.datos.error || 'No se pudo agregar.', 'bad');
+  veh = r.datos;
+  recordar(veh);
+  pintarVehiculo();
+}
+
+$('#agregarExtra').addEventListener('click', () => {
+  agregarServicio($('#servicioExtra').value);
+  $('#servicioExtra').value = '';
+});
+$('#servicioExtra').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#agregarExtra').click(); } });
+$('#catalogoVeh').addEventListener('click', e => {
+  const b = e.target.closest('[data-sumar]');
+  if (b) agregarServicio(b.dataset.sumar);
+});
+
+$('#fotoArchivo').addEventListener('change', async e => {
+  const archivo = e.target.files[0];
+  e.target.value = '';
+  if (!archivo) return;
+  toast('Subiendo foto…');
+  try {
+    const imagen = await comprimir(archivo);
+    const r = await api(`/api/taller/operacion/${encodeURIComponent(token)}/foto`, { etapa: $('#etapaFoto').value, imagen });
+    if (!r.ok) return toast(r.datos.error || 'No se pudo subir la foto.', 'bad');
+    await cargarVehiculo();
+    toast('Foto guardada.');
+  } catch {
+    toast('No se pudo leer la foto.', 'bad');
+  }
+});
+
+$('#copiar').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(enlaceSeguimiento()); toast('Enlace copiado.'); }
+  catch { toast('No se pudo copiar. Selecciona el enlace y cópialo.', 'bad'); }
+});
+$('#compartir').addEventListener('click', async () => {
+  if (navigator.share) {
+    try { await navigator.share({ title: `Seguimiento · ${veh.vehiculo.placa || veh.vehiculo.modelo}`, url: enlaceSeguimiento() }); }
+    catch { /* el usuario canceló */ }
+  } else {
+    $('#copiar').click();
+  }
+});
+
+// Mientras el vehículo está abierto, el celular se actualiza solo (lo mismo que ve el cliente).
+setInterval(() => { if (token && !document.hidden && !ocupado) cargarVehiculo(); }, 5000);
+document.addEventListener('visibilitychange', () => { if (token && !document.hidden) cargarVehiculo(); });
+
+// --- Arranque ---
+
+try { $('#mecanico').value = localStorage.getItem(CLAVE_MEC) || ''; } catch { /* sin almacenamiento */ }
+$('#mecanico').addEventListener('change', () => {
+  try { localStorage.setItem(CLAVE_MEC, mecanico()); } catch { /* sin almacenamiento */ }
+});
+
+fetch('config.json', { cache: 'no-store' })
+  .then(r => r.json())
+  .then(c => { catalogo = (c.taller && c.taller.servicios_catalogo) || []; if (veh || !$('#vNuevo').hidden) pintarServiciosNuevos(); })
+  .catch(() => { catalogo = []; });
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+if (token) {
+  abrirVehiculo();
+} else if (new URLSearchParams(location.search).has('nuevo')) {
+  abrirNuevo();
+} else {
+  mostrar('inicio');
+  pintarRecientes();
+}
+</script>
+</body>
+</html>

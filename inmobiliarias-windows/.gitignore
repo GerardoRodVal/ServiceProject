@@ -1,0 +1,7 @@
+.venv/
+build/
+dist/
+salida/
+__pycache__/
+pruebas/sandbox/resultado.txt
+pruebas/sandbox/*.log

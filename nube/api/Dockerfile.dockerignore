@@ -1,0 +1,18 @@
+# El contexto es la carpeta del proyecto: solo entra lo que el Dockerfile necesita.
+*
+!nube/api/requirements.txt
+!nube/api/requirements-dev.txt
+!nube/api/app
+!nube/api/herramientas
+!nube/api/tests
+!captura-visitas-pwa/index.html
+!captura-visitas-pwa/inicio.html
+!captura-visitas-pwa/cliente.html
+!captura-visitas-pwa/sw.js
+!captura-visitas-pwa/manifest.webmanifest
+!captura-visitas-pwa/icon.svg
+!captura-visitas-pwa/icon-192.png
+!captura-visitas-pwa/icon-512.png
+!captura-visitas-pwa/apple-touch-icon.png
+!captura-visitas-pwa/vendor/qrcode.js
+**/__pycache__

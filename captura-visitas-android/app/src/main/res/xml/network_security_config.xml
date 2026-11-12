@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- El gestor de la PC responde por http en la red Wi-Fi local (la dirección cambia según el router),
+     por eso se permite texto plano. La app solo envía datos a la dirección que guarda el usuario. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

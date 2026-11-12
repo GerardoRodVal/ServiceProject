@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="t">
+  <title id="t">NearLeads</title>
+  <!-- Ícono de app (cuadro blanco redondeado): para la app del celular, el APK y la barra de la landing.
+       Mismo dibujo que el isotipo, con líneas y nodos más gruesos para que se lea en tamaño chico. -->
+  <defs>
+    <linearGradient id="nl-gi" x1="0" y1="8" x2="0" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0A2E86"/>
+      <stop offset=".38" stop-color="#04438F"/>
+      <stop offset=".62" stop-color="#0A8CA3"/>
+      <stop offset=".84" stop-color="#00D0B0"/>
+      <stop offset="1" stop-color="#00F0B8"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#FFFFFF"/>
+  <g transform="translate(6.4 4.8) scale(.8)">
+    <g fill="none" stroke="url(#nl-gi)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 12 19 9 32 8 45 9 58 12M12 22 25 20 39 20 52 22M19 31 32 29 45 31M26 39H38M28 48H36"/>
+      <path d="M6 12 12 22 19 31 26 39 28 48M58 12 52 22 45 31 38 39 36 48"/>
+      <path d="M19 9 12 22M19 9 25 20M32 8 25 20M32 8 39 20M45 9 39 20M45 9 52 22M25 20 19 31M25 20 32 29M39 20 32 29M39 20 45 31M32 29 26 39M32 29 38 39M26 39 36 48"/>
+    </g>
+    <g fill="url(#nl-gi)">
+      <circle cx="25" cy="20" r="3"/><circle cx="39" cy="20" r="3"/>
+      <circle cx="32" cy="29" r="3"/>
+    </g>
+    <circle cx="32" cy="57.5" r="4.4" fill="#00F0B8"/>
+  </g>
+</svg>

@@ -1,0 +1,158 @@
+# Entorno local que imita lo que se usará en Azure:
+#   db       -> Azure Database for PostgreSQL Flexible Server
+#   azurite  -> Azure Blob Storage (fotos y archivos)
+#   idp      -> Microsoft Entra External ID (inicio de sesión de la app del celular), solo simulado
+#   api      -> Azure App Service / Container Apps (también sirve la app del celular)
+# Todo escucha solo en 127.0.0.1: nada de esto se ve desde la red.
+name: captura-nube
+
+x-construccion: &construccion
+  context: ..                       # la carpeta del proyecto: la imagen incluye la app del celular (captura-visitas-pwa)
+  dockerfile: nube/api/Dockerfile
+  args:
+    DEV: "1"
+
+x-entorno-app: &entorno-app
+  DATABASE_URL: postgresql://app_api:${DB_APP_CLAVE:-app_local_cambiar}@db:5432/${DB_NOMBRE:-captura}
+  # «local» acepta los tokens de prueba (/dev/token, los usa el gestor de Windows) y, además, los del proveedor OIDC.
+  AUTH_MODO: local
+  JWT_DEV_SECRETO: ${JWT_DEV_SECRETO:-clave-local-solo-para-desarrollo-32-bytes-minimo}
+  # Cadena de conexión pública y documentada de Azurite (no es un secreto).
+  BLOB_CONNECTION_STRING: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+  BLOB_CONTENEDOR: archivos
+  # Validación de los tokens del proveedor. El emisor es la dirección que ve el navegador; las claves se piden por la red de Docker.
+  OIDC_EMISOR: http://127.0.0.1:9000
+  OIDC_JWKS_URL: http://idp:9000/jwks
+  OIDC_AUDIENCIA: api://captura
+  OIDC_CLAIM_IDENTIDAD: email       # en Entra se usa «oid» y cada usuario se da de alta con su sub_externo
+  # Cómo inicia sesión la app del celular (lo que publica /app-config.json).
+  PWA_DIR: /srv/pwa
+  PWA_OIDC_EMISOR: http://127.0.0.1:9000
+  PWA_OIDC_CLIENT_ID: captura-pwa
+  PWA_OIDC_SCOPE: "openid profile email offline_access"
+  # WhatsApp con IA. La clave cifra en la base los tokens de Meta de cada negocio; esta es solo de desarrollo (en Azure,
+  # una distinta en Key Vault). En local la IA es el Ollama de tu PC; en Azure: IA_PROVEEDOR=anthropic + ANTHROPIC_API_KEY.
+  WHATSAPP_CLAVE: ${WHATSAPP_CLAVE:-ZGVzYXJyb2xsby1sb2NhbC13aGF0c2FwcC0zMmJ5dGU=}
+  IA_PROVEEDOR: ${IA_PROVEEDOR:-ollama}
+  IA_MODELO: ${IA_MODELO:-}
+  OLLAMA_URL: http://host.docker.internal:11434
+
+x-entorno-admin: &entorno-admin
+  DATABASE_ADMIN_URL: postgresql://${DB_ADMIN_USUARIO:-captura_admin}:${DB_ADMIN_CLAVE:-admin_local_cambiar}@db:5432/${DB_NOMBRE:-captura}
+
+x-entorno-idp: &entorno-idp
+  IDP_EMISOR: http://127.0.0.1:9000
+  IDP_AUDIENCIA: api://captura
+  IDP_CLIENT_ID: captura-pwa
+  # Además de la web, el enlace de retorno de la APK de Android (el inicio de sesión se hace en el navegador del sistema).
+  IDP_REDIRECTS: "http://127.0.0.1:8000/,http://localhost:8000/,com.nearustech.capturavisitas:/oauth"
+  IDP_PERMITIR_ALTAS: "1"          # permite registrar usuarios de prueba (POST /dev/usuarios)
+  IDP_CLAVE_RUTA: /idp/clave.pem
+  IDP_USUARIOS_RUTA: /idp/usuarios.json   # las cuentas creadas en la pantalla de registro sobreviven a un reinicio
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${DB_ADMIN_USUARIO:-captura_admin}
+      POSTGRES_PASSWORD: ${DB_ADMIN_CLAVE:-admin_local_cambiar}
+      POSTGRES_DB: ${DB_NOMBRE:-captura}
+      APP_DB_PASSWORD: ${DB_APP_CLAVE:-app_local_cambiar}
+    volumes:
+      - datos_pg:/var/lib/postgresql/data
+      - ./db/migraciones:/migraciones:ro
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:5433:5432"   # 5433 para no chocar con un PostgreSQL local en el 5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:3.33.0
+    # --skipApiVersionCheck: el SDK de Azure suele pedir una versión de API más nueva que la que emula Azurite.
+    command: azurite-blob --blobHost 0.0.0.0 --location /data --skipApiVersionCheck --loose
+    volumes:
+      - datos_azurite:/data
+    ports:
+      - "127.0.0.1:10000:10000"
+
+  idp:
+    build: *construccion
+    environment:
+      <<: *entorno-idp
+    command: ["uvicorn", "app.dev_idp:app", "--host", "0.0.0.0", "--port", "9000"]
+    volumes:
+      - datos_idp:/idp
+    ports:
+      - "127.0.0.1:9000:9000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:9000/salud').status == 200 else 1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: *construccion
+    environment:
+      <<: *entorno-app
+    volumes:
+      - ../captura-visitas-pwa:/srv/pwa:ro   # en local, la app del celular se ve al instante; la API solo sirve los archivos permitidos
+    depends_on:
+      db:
+        condition: service_healthy
+      azurite:
+        condition: service_started
+      idp:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/salud').status == 200 else 1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Herramientas puntuales (no arrancan con `up`): docker compose --profile herramientas run --rm pruebas
+  pruebas:
+    profiles: ["herramientas"]
+    build: *construccion
+    environment:
+      <<: [*entorno-app, *entorno-admin]
+      IDP_URL: http://idp:9000
+    depends_on:
+      db:
+        condition: service_healthy
+      azurite:
+        condition: service_started
+      idp:
+        condition: service_healthy
+    command: ["python", "-m", "pytest", "-v", "tests"]
+
+  migracion:
+    profiles: ["herramientas"]
+    build: *construccion
+    environment:
+      <<: *entorno-admin
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["python", "-m", "herramientas.migrar_sqlite"]
+
+  # Alta y gestión de clientes (negocios y su primer administrador). Ver herramientas/clientes.py.
+  clientes:
+    profiles: ["herramientas"]
+    build: *construccion
+    environment:
+      <<: *entorno-admin
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["python", "-m", "herramientas.clientes"]
+
+volumes:
+  datos_pg:
+  datos_azurite:
+  datos_idp:

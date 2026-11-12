@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 72" role="img" aria-labelledby="t">
+  <title id="t">NearLeads</title>
+  <!-- Logo horizontal: isotipo + «NearLeads» en letra redondeada, como la de «nearustech».
+       La tipografía es Comfortaa (Google Fonts). Fuera del navegador o como <img> la fuente puede no cargar:
+       para imprenta o diseño, convierte el texto a curvas en tu programa de diseño. -->
+  <defs>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&amp;display=swap');</style>
+    <linearGradient id="nl-g" x1="0" y1="12" x2="0" y2="62" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0A2E86"/>
+      <stop offset=".38" stop-color="#04438F"/>
+      <stop offset=".62" stop-color="#0A8CA3"/>
+      <stop offset=".84" stop-color="#00D0B0"/>
+      <stop offset="1" stop-color="#00F0B8"/>
+    </linearGradient>
+    <linearGradient id="nl-t" x1="76" y1="0" x2="252" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0A8CA3"/>
+      <stop offset=".45" stop-color="#04438F"/>
+      <stop offset="1" stop-color="#04438F"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(0 4)">
+    <g fill="none" stroke="url(#nl-g)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 12 19 9 32 8 45 9 58 12M12 22 25 20 39 20 52 22M19 31 32 29 45 31M26 39H38M28 48H36"/>
+      <path d="M6 12 12 22 19 31 26 39 28 48M58 12 52 22 45 31 38 39 36 48"/>
+      <path d="M19 9 12 22M19 9 25 20M32 8 25 20M32 8 39 20M45 9 39 20M45 9 52 22M25 20 19 31M25 20 32 29M39 20 32 29M39 20 45 31M32 29 26 39M32 29 38 39M26 39 36 48"/>
+    </g>
+    <g fill="url(#nl-g)">
+      <circle cx="25" cy="20" r="2.1"/><circle cx="39" cy="20" r="2.1"/>
+      <circle cx="32" cy="29" r="2.1"/>
+    </g>
+    <circle cx="32" cy="57" r="3.4" fill="#00F0B8"/>
+  </g>
+  <text x="76" y="45" font-family="Comfortaa, 'Varela Round', Nunito, 'Segoe UI', sans-serif" font-weight="700" font-size="30" letter-spacing="-.3" fill="url(#nl-t)">NearLeads</text>
+</svg>

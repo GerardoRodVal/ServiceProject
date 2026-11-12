@@ -1,0 +1,30 @@
+# Entornos y dependencias (se recrean en cada PC)
+.venv/
+venv/
+node_modules/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Salidas de compilación e instaladores (los instaladores van en Releases, no en el repo)
+build/
+dist/
+out/
+salida/
+*.exe
+*.msi
+*.apk
+
+# Propio de cada PC o de IDE
+local.properties
+.idea/
+.vscode/
+*.log
+
+# Secretos y datos locales
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+*.sqlite3
